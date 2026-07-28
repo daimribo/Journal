@@ -1,6 +1,22 @@
 #include <gtk/gtk.h>
 #include "backend.h"
 
+static void Actions (GtkApplication *app, gpointer user_data){
+  GtkWidget *window;
+  window = gtk_application_window_new(app);
+  gtk_window_set_title(GTK_WINDOW(window), "Journal.demo");
+  gtk_container_set_border_width (GTK_CONTAINER (window), 100);
+
+  struct stat buffer;
+  if (stat ("password.txt", &buffer) != 0) {
+    CreatePassword(window);
+    Login(window);
+  }else{
+    Login(window);
+  }
+  gtk_widget_show_all(window);
+}
+
 int main (int argc, char **argv){
   GtkApplication *app;
   int status;

@@ -8,6 +8,52 @@
 static void print_from_text (GtkEntry *text_entry, gpointer user_data){
   g_print("%s\n",gtk_entry_get_text(text_entry));
 }
+
+typedef struct Loginsttruct{
+  GtkWidget* password_entry, *grid;
+  char password[100];
+}LOGIN;
+
+static void ButtonClickedLogin(GtkWidget *widget, gpointer data){
+  LOGIN *login = data;
+  const gchar *entry = gtk_entry_get_text(GTK_ENTRY(login->password_entry));
+  const gchar *password = login->password;
+  g_print("%s\n", entry);
+  g_print("%s\n", password);
+  if(strcmp(entry, password) == 0){
+    g_print("%s\n","password is correct");
+    gtk_widget_destroy(login->grid);
+  }
+  else{
+    g_print("%s\n","password is incorrect");
+  }
+}
+
+static void Login (GtkWidget* window){
+  g_print("login called\n");
+  GtkWidget *button;
+
+  LOGIN *login = malloc(sizeof(LOGIN));
+
+  login->grid = gtk_grid_new();
+  gtk_container_add(GTK_CONTAINER(window), login->grid);
+
+  login->password_entry = gtk_entry_new();
+  gtk_grid_attach(GTK_GRID(login->grid), login->password_entry, 0,0,1,1);
+  gtk_entry_set_placeholder_text(GTK_ENTRY(login->password_entry), "Enter password");
+  gtk_entry_set_visibility(GTK_ENTRY(login->password_entry), FALSE);
+  gtk_entry_set_invisible_char(GTK_ENTRY(login->password_entry), '*');
+
+  button = gtk_button_new_with_label("Enter");
+  gtk_grid_attach(GTK_GRID(login->grid), button, 1,0,1,1);
+
+  FILE *password_file;
+  password_file = fopen("password.txt", "r");
+  fgets(login->password, 100, password_file);
+
+  g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedLogin), login);
+}
+
 typedef struct Createpassword{
   GtkWidget *grid ,*password_entry, *password_reentry;
 }CREATEPASSWORD;
@@ -23,6 +69,7 @@ const void ButtonClickCreatePassword(GtkWidget *widget, gpointer data){
     fclose(password_file);
     g_print("%s\n","password created successfully");
     gtk_widget_destroy(createpassword->grid);
+    return;
   }
   else{
     g_print("%s\n","passwords are different");
@@ -53,35 +100,7 @@ static void CreatePassword (GtkWidget *window){
   gtk_entry_set_invisible_char(GTK_ENTRY(createpassword->password_reentry), '*');
 
   g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickCreatePassword), createpassword);
+  return;
 }
-
-static void Login (GtkWidget* window){
-  GtkWidget *password_entry;
-  GtkWidget *grid;
-
-  grid = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(window), grid);
-
-  password_entry = gtk_entry_new();
-  gtk_grid_attach(GTK_GRID(grid), password_entry, 0,0,1,1);
-}
-
-static void Actions (GtkApplication *app, gpointer user_data){
-  GtkWidget *window;
-
-  window = gtk_application_window_new(app);
-  gtk_window_set_title(GTK_WINDOW(window), "Journal.demo");
-  gtk_container_set_border_width (GTK_CONTAINER (window), 100);
-
-  struct stat buffer;
-  if (stat ("password.txt", &buffer) == 0) {
-    printf("password exists");
-  } else {
-    printf("password doesnt exist");
-    CreatePassword(window);
-  }
-  gtk_widget_show_all(window);
-}
-
 
 #endif
