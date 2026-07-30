@@ -3,17 +3,20 @@
 
 static void Actions (GtkApplication *app, gpointer user_data){
   GtkWidget *window;
+  GtkWidget *grid;
+
   window = gtk_application_window_new(app);
   gtk_window_set_title(GTK_WINDOW(window), "Journal.demo");
   gtk_container_set_border_width (GTK_CONTAINER (window), 100);
 
+  grid = gtk_grid_new();
+  gtk_container_add(GTK_CONTAINER(window), grid);
+
   struct stat buffer;
   if (stat ("password.txt", &buffer) != 0) {
-    CreatePassword(window);
-    Login(window);
-  }else{
-    Login(window);
+    CreatePassword(grid);
   }
+  Login(grid);
   gtk_widget_show_all(window);
 }
 
