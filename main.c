@@ -4,6 +4,7 @@
 static void Actions (GtkApplication *app, gpointer user_data){
   GtkWidget *window;
   GtkWidget *grid;
+  int *log_in_success;
 
   window = gtk_application_window_new(app);
   gtk_window_set_title(GTK_WINDOW(window), "Journal.demo");
@@ -16,7 +17,10 @@ static void Actions (GtkApplication *app, gpointer user_data){
   if (stat ("password.txt", &buffer) != 0) {
     CreatePassword(grid);
   }
-  Login(grid);
+  //log_in_success = Login(grid);
+  //if(log_in_success == 1)
+  //Login(grid, window);
+  MainMenu(grid,window);
   gtk_widget_show_all(window);
 }
 
