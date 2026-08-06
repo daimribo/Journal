@@ -3,24 +3,34 @@
 
 static void Actions (GtkApplication *app, gpointer user_data){
   GtkWidget *window;
-  GtkWidget *grid;
-  int *log_in_success;
+  GtkWidget *stack;
+
+  stack = gtk_stack_new();
 
   window = gtk_application_window_new(app);
   gtk_window_set_title(GTK_WINDOW(window), "Journal.demo");
   gtk_container_set_border_width (GTK_CONTAINER (window), 100);
 
-  grid = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(window), grid);
+  gtk_container_add(GTK_CONTAINER(window), stack);
+
+  GtkWidget *login_page = Login(stack);
+  GtkWidget *main_menu_page = MainMenu(stack, window);
+  
+  gtk_stack_add_named(GTK_STACK(stack), login_page, "login");
+  gtk_stack_add_named(GTK_STACK(stack), main_menu_page, "mainmenu");
 
   struct stat buffer;
   if (stat ("password.txt", &buffer) != 0) {
-    CreatePassword(grid);
+    printf("no password");
+
+    GtkWidget *password_creation_page = CreatePassword(stack);
+    gtk_stack_add_named(GTK_STACK(stack), password_creation_page, "password");
+    gtk_stack_set_visible_child_name(GTK_STACK(stack), "password");
   }
-  //log_in_success = Login(grid);
-  //if(log_in_success == 1)
-  //Login(grid, window);
-  MainMenu(grid,window);
+  else{
+    printf("exists");
+    gtk_stack_set_visible_child_name(GTK_STACK(stack), "login");
+  }
   gtk_widget_show_all(window);
 }
 
