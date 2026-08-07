@@ -1,8 +1,24 @@
+#pragma once
 #ifndef BACKEND_H
 #define BACKEND_H
 #include <gtk/gtk.h>
 #include <sys/stat.h>
 #include <string.h>
+
+void LoadCss(void){
+  GtkCssProvider *css_provider = gtk_css_provider_new();
+  GError *error = NULL;
+  gtk_css_provider_load_from_file(css_provider, g_file_new_for_path("interface.css"), &error);
+
+  if (error != NULL) {
+      g_printerr("Error loading CSS file: %s\n", error->message);
+      g_error_free(error);
+  } else {
+      GdkScreen *screen = gdk_screen_get_default();
+      gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(css_provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  }
+  g_object_unref(css_provider);
+}
 
 typedef struct Createpassword{
   GtkWidget *button, *password_entry, *password_reentry, *stack;
@@ -20,7 +36,7 @@ const void ButtonClickCreatePassword (GtkWidget *widget, gpointer data){
     fclose(password_file);
     g_print("%s\n","password created successfully");
     gtk_stack_set_visible_child_name(GTK_STACK(createpassword->stack), "login");
-    free(createpassword);
+    //free(createpassword);
     return;
   }
   else{
@@ -50,17 +66,19 @@ GtkWidget *CreatePassword (GtkWidget *stack){
   gtk_entry_set_invisible_char(GTK_ENTRY(createpassword->password_reentry), '*');
 
   g_signal_connect(createpassword->button, "clicked", G_CALLBACK(ButtonClickCreatePassword), createpassword);
+  //free(createpassword);
   return grid;
 }
 
 
 typedef struct Mainmenu{
-  GtkWidget *button, *window, *stack;
+  GtkWidget *window, *stack;
 }MAINMENU;
 
-static void Settings (GtkWidget *parent_window){
+GtkWidget *Settings (GtkWidget *parent_window){
   GtkWidget *window;
   GtkWidget *button;
+  GtkStyleContext *style;
 
   GtkWidget *grid = gtk_grid_new();
 
@@ -74,6 +92,11 @@ static void Settings (GtkWidget *parent_window){
   button = gtk_button_new_with_label("test");
   gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
 
+  style = gtk_widget_get_style_context(button);
+  gtk_style_context_add_class(style, "settings-button");
+
+  g_signal_connect_swapped(button, "clicked", G_CALLBACK(gtk_widget_destroy), window);
+
   gtk_widget_show_all(window);
 }
 
@@ -81,22 +104,30 @@ static void ButtonClickedMainMenu(GtkWidget *widget, gpointer data){
   MAINMENU *mainmenu = data;
 
   Settings(mainmenu->window);
+  //free(mainmenu);
 }
 
 GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window){
   MAINMENU *mainmenu = malloc(sizeof(MAINMENU));
   GtkWidget *image;
+  GtkWidget *button;
+  //GtkWidget *frame;
 
   GtkWidget *grid = gtk_grid_new();
   mainmenu->stack = stack;
-
   mainmenu->window = window;
-  image = gtk_image_new_from_file("assets/gear.png");
-  mainmenu->button = gtk_button_new();
-  gtk_button_set_image(GTK_BUTTON(mainmenu->button), image);
-  gtk_grid_attach(GTK_GRID(grid), mainmenu->button, 0,0,5,5);
 
-  g_signal_connect(mainmenu->button, "clicked", G_CALLBACK(ButtonClickedMainMenu), mainmenu);
+  image = gtk_image_new_from_file("assets/gear.png");
+  button = gtk_button_new();
+  gtk_button_set_image(GTK_BUTTON(button), image);
+  gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
+  gtk_grid_insert_column(GTK_GRID(grid), 1);
+
+  //frame = gtk_frame_new(NULL);
+  //gtk_grid_attach(GTK_GRID(grid), frame, 10,10,10,10);
+
+  g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedMainMenu), mainmenu);
+  //free(mainmenu);
   return grid;
 }
 
@@ -121,6 +152,7 @@ static void ButtonClickedLogin (GtkWidget *widget, gpointer data){
   if(strcmp(entry, password) == 0){
     g_print("%s\n","password is correct");
     gtk_stack_set_visible_child_name(GTK_STACK(login->stack), "mainmenu");
+    //free(login);
   }
   else{
     g_print("%s\n","password is incorrect");
@@ -143,6 +175,8 @@ GtkWidget *Login (GtkWidget *stack){
   gtk_grid_attach(GTK_GRID(grid), login->button, 1,0,1,1);
 
   g_signal_connect(login->button, "clicked", G_CALLBACK(ButtonClickedLogin), login);
+  //free(login);
   return grid;
 }
+
 #endif
