@@ -1,11 +1,25 @@
-.settings-button {
-    background-color: #4CAF50; /* Green background */
-    color: white; /* White text */
-    padding: 10px 20px; /* Padding around text */
-    border-radius: 5px; /* Rounded corners */
-    font-weight: bold; /* Bold text */
+window {
+    background-image: none;
+    background-color: #32323f;
+    border-radius: 5px;
 }
 
-.settings-button:hover {
-    background-color: #45a049; /* Darker green on hover */
+.window-settings{
+    background-image: none;
+    background-color: #454555;
+    border-radius: 5px;
+}
+
+button {
+    background-image: none;
+    background-color: #414152;
+    color: #787892; /* text color */
+    /*padding: 10px 20px; Padding around text */
+    border-radius: 5px; /* Rounded corners */
+    /* font-weight: bold; Bold text */
+}
+
+button:hover {
+    background-color: #4e4e63; /* Darker green on hover */
+    color: #b2b2dd;
 }

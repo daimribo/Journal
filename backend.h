@@ -20,7 +20,7 @@ void LoadCss(void){
   g_object_unref(css_provider);
 }
 
-typedef struct Createpassword{
+/*typedef struct Createpassword{
   GtkWidget *button, *password_entry, *password_reentry, *stack;
 }CREATEPASSWORD;
 
@@ -44,7 +44,7 @@ const void ButtonClickCreatePassword (GtkWidget *widget, gpointer data){
   }
 }
 
-GtkWidget *CreatePassword (GtkWidget *stack){
+GtkWidget *CreatePassword (GtkWidget *stack, GtkStyleContext *style){
   CREATEPASSWORD *createpassword = malloc(sizeof(CREATEPASSWORD));
 
   GtkWidget *grid = gtk_grid_new();
@@ -68,32 +68,42 @@ GtkWidget *CreatePassword (GtkWidget *stack){
   g_signal_connect(createpassword->button, "clicked", G_CALLBACK(ButtonClickCreatePassword), createpassword);
   //free(createpassword);
   return grid;
+}*/
+
+
+GtkWidget *WriteSpace(GtkWidget *stack){
+  GtkWidget *grid;
+  grid = gtk_grid_new();
+  return grid;
 }
 
 
 typedef struct Mainmenu{
   GtkWidget *window, *stack;
+  GtkStyleContext *style;
 }MAINMENU;
 
-GtkWidget *Settings (GtkWidget *parent_window){
+static void *Settings (GtkWidget *parent_window, GtkStyleContext *style){
   GtkWidget *window;
   GtkWidget *button;
-  GtkStyleContext *style;
+  GtkWidget *grid;
 
-  GtkWidget *grid = gtk_grid_new();
+  grid = gtk_grid_new();
 
   window = gtk_window_new(GTK_WINDOW_POPUP);
-  gtk_container_set_border_width (GTK_CONTAINER (window), 100);
-
+  gtk_container_set_border_width (GTK_CONTAINER (window), 300);
   gtk_container_add(GTK_CONTAINER(window), grid);
   gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(parent_window));
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
 
+  style = gtk_widget_get_style_context(window);
+  gtk_style_context_add_class(style, "window-settings");
+
   button = gtk_button_new_with_label("test");
   gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
 
-  style = gtk_widget_get_style_context(button);
-  gtk_style_context_add_class(style, "settings-button");
+  //style = gtk_widget_get_style_context(button);
+  //gtk_style_context_add_class(style, "button");
 
   g_signal_connect_swapped(button, "clicked", G_CALLBACK(gtk_widget_destroy), window);
 
@@ -103,36 +113,62 @@ GtkWidget *Settings (GtkWidget *parent_window){
 static void ButtonClickedMainMenu(GtkWidget *widget, gpointer data){
   MAINMENU *mainmenu = data;
 
-  Settings(mainmenu->window);
+  Settings(mainmenu->window, mainmenu->style);
   //free(mainmenu);
 }
 
-GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window){
+static void ButtonClickedNewEntry(GtkWidget *widget, gpointer data){
+  GtkWidget *stack = data;
+  gtk_stack_set_visible_child_name(GTK_STACK(stack), "writespace");
+}
+
+GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style){
   MAINMENU *mainmenu = malloc(sizeof(MAINMENU));
   GtkWidget *image;
   GtkWidget *button;
-  //GtkWidget *frame;
+  GtkWidget *menu;
+  GtkWidget *menu_item;
+  //GtkWidget *sidebar;
 
   GtkWidget *grid = gtk_grid_new();
   mainmenu->stack = stack;
   mainmenu->window = window;
+  mainmenu->style = style;
+
+  /*sidebar = gtk_stack_sidebar_new();
+  gtk_stack_sidebar_set_stack(GTK_STACK_SIDEBAR(sidebar), GTK_STACK(stack));
+  gtk_stack_add_named(GTK_STACK(stack), sidebar, "sidebar");
+  gtk_stack_set_visible_child_name(GTK_STACK(stack), "sidebar");
+
+  style = gtk_widget_get_style_context(sidebar);
+  gtk_style_context_add_class(style, "sidebar");*/
+
+  menu = gtk_menu_new();
+  button = gtk_menu_button_new();
+  //gtk_widget_set_valign(button, GTK_ALIGN_START);
+  gtk_menu_button_set_direction(GTK_MENU_BUTTON(button), GTK_ARROW_RIGHT);
+  gtk_grid_attach(GTK_GRID(grid), button, 0,0,4,1);
+
+  menu_item = gtk_menu_item_new_with_label("new entry");
+  gtk_menu_attach(GTK_MENU(menu), menu_item, 1,2,1,2);
+  gtk_menu_button_set_popup(GTK_MENU_BUTTON(button), menu);
+
+  g_signal_connect(menu_item, "activate" ,G_CALLBACK(ButtonClickedNewEntry), stack);
 
   image = gtk_image_new_from_file("assets/gear.png");
   button = gtk_button_new();
   gtk_button_set_image(GTK_BUTTON(button), image);
-  gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
-  gtk_grid_insert_column(GTK_GRID(grid), 1);
+  gtk_grid_attach(GTK_GRID(grid), button, 0,1,4,4);
+  //gtk_grid_insert_column(GTK_GRID(grid), 1);
 
-  //frame = gtk_frame_new(NULL);
-  //gtk_grid_attach(GTK_GRID(grid), frame, 10,10,10,10);
-
+  gtk_widget_show_all(menu);
   g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedMainMenu), mainmenu);
   //free(mainmenu);
   return grid;
 }
 
 
-typedef struct Loginsttruct{
+/*typedef struct Loginsttruct{
   GtkWidget *button, *password_entry, *stack;
   char password[100];
 }LOGIN;
@@ -159,7 +195,7 @@ static void ButtonClickedLogin (GtkWidget *widget, gpointer data){
   }
 }
 
-GtkWidget *Login (GtkWidget *stack){
+GtkWidget *Login (GtkWidget *stack, GtkStyleContext *style){
   LOGIN *login = malloc(sizeof(LOGIN));
 
   GtkWidget *grid = gtk_grid_new();
@@ -177,6 +213,6 @@ GtkWidget *Login (GtkWidget *stack){
   g_signal_connect(login->button, "clicked", G_CALLBACK(ButtonClickedLogin), login);
   //free(login);
   return grid;
-}
+}*/
 
 #endif
