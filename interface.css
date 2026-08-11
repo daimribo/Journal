@@ -1,12 +1,12 @@
-window {
+.window-popup{
     background-image: none;
-    background-color: #32323f;
+    background-color: #454555;
     border-radius: 5px;
 }
 
-.window-settings{
+window {
     background-image: none;
-    background-color: #454555;
+    background-color: #32323f;
     border-radius: 5px;
 }
 

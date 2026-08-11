@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <string.h>
 
+
 void LoadCss(void){
   GtkCssProvider *css_provider = gtk_css_provider_new();
   GError *error = NULL;
@@ -77,37 +78,33 @@ GtkWidget *WriteSpace(GtkWidget *stack){
   return grid;
 }
 
-
 typedef struct Mainmenu{
-  GtkWidget *window, *stack;
+  GtkWidget *window, *stack, *entry;
   GtkStyleContext *style;
 }MAINMENU;
 
-static void *Settings (GtkWidget *parent_window, GtkStyleContext *style){
-  GtkWidget *window;
+static void Settings (GtkWidget *parent_window, GtkStyleContext *style){
+  GtkWidget *window_popup;
   GtkWidget *button;
   GtkWidget *grid;
 
   grid = gtk_grid_new();
 
-  window = gtk_window_new(GTK_WINDOW_POPUP);
-  gtk_container_set_border_width (GTK_CONTAINER (window), 300);
-  gtk_container_add(GTK_CONTAINER(window), grid);
-  gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(parent_window));
-  gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
+  window_popup = gtk_window_new(GTK_WINDOW_POPUP);
+  gtk_container_set_border_width (GTK_CONTAINER (window_popup), 300);
+  gtk_container_add(GTK_CONTAINER(window_popup), grid);
+  gtk_window_set_transient_for(GTK_WINDOW(window_popup), GTK_WINDOW(parent_window));
+  gtk_window_set_position(GTK_WINDOW(window_popup), GTK_WIN_POS_CENTER_ON_PARENT);
 
-  style = gtk_widget_get_style_context(window);
-  gtk_style_context_add_class(style, "window-settings");
+  style = gtk_widget_get_style_context(window_popup);
+  gtk_style_context_add_class(style, "window-popup");
 
   button = gtk_button_new_with_label("test");
   gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
 
-  //style = gtk_widget_get_style_context(button);
-  //gtk_style_context_add_class(style, "button");
+  g_signal_connect_swapped(button, "clicked", G_CALLBACK(gtk_widget_destroy), window_popup);
 
-  g_signal_connect_swapped(button, "clicked", G_CALLBACK(gtk_widget_destroy), window);
-
-  gtk_widget_show_all(window);
+  gtk_widget_show_all(window_popup);
 }
 
 static void ButtonClickedMainMenu(GtkWidget *widget, gpointer data){
@@ -117,9 +114,50 @@ static void ButtonClickedMainMenu(GtkWidget *widget, gpointer data){
   //free(mainmenu);
 }
 
+static void ButtonClickedCreateEntry(GtkWidget *widget, gpointer data){
+  MAINMENU *mainmenu = data;
+  const gchar *entry_name = gtk_entry_get_text(GTK_ENTRY(mainmenu->entry));
+  gchar *filename = g_build_filename("entries", entry_name, NULL);
+  FILE *new_entry;
+  new_entry = fopen(filename, "w+");
+  fclose(new_entry);
+}
+
+static void NewEntryMenu(GtkWidget *parent_window, GtkStyleContext *style, GtkWidget *stack){
+  MAINMENU *mainmenu = malloc(sizeof(MAINMENU));
+  GtkWidget *window_popup;
+  GtkWidget *button;
+  GtkWidget *grid;
+
+  mainmenu->stack = stack;
+
+  grid = gtk_grid_new();
+
+  window_popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_container_set_border_width (GTK_CONTAINER (window_popup), 100);
+  gtk_container_add(GTK_CONTAINER(window_popup), grid);
+  gtk_window_set_transient_for(GTK_WINDOW(window_popup), GTK_WINDOW(parent_window));
+  gtk_window_set_position(GTK_WINDOW(window_popup), GTK_WIN_POS_CENTER_ON_PARENT);
+
+  style = gtk_widget_get_style_context(window_popup);
+  gtk_style_context_add_class(style, "window-popup");
+
+  mainmenu->entry = gtk_entry_new();
+  gtk_grid_attach(GTK_GRID(grid), mainmenu->entry, 2,0,1,1);
+  gtk_entry_set_placeholder_text(GTK_ENTRY(mainmenu->entry), "Entry Name");
+
+  button = gtk_button_new_with_label("create");
+  gtk_grid_attach(GTK_GRID(grid), button, 2,2,1,1);
+
+  g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedCreateEntry), mainmenu);
+
+  gtk_widget_show_all(window_popup);
+}
+
 static void ButtonClickedNewEntry(GtkWidget *widget, gpointer data){
-  GtkWidget *stack = data;
-  gtk_stack_set_visible_child_name(GTK_STACK(stack), "writespace");
+  MAINMENU *mainmenu = data;
+  //gtk_stack_set_visible_child_name(GTK_STACK(stack), "writespace");
+  NewEntryMenu(mainmenu->window, mainmenu->style, mainmenu->stack);
 }
 
 GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style){
@@ -153,13 +191,12 @@ GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style
   gtk_menu_attach(GTK_MENU(menu), menu_item, 1,2,1,2);
   gtk_menu_button_set_popup(GTK_MENU_BUTTON(button), menu);
 
-  g_signal_connect(menu_item, "activate" ,G_CALLBACK(ButtonClickedNewEntry), stack);
+  g_signal_connect(menu_item, "activate" ,G_CALLBACK(ButtonClickedNewEntry), mainmenu);
 
   image = gtk_image_new_from_file("assets/gear.png");
   button = gtk_button_new();
   gtk_button_set_image(GTK_BUTTON(button), image);
   gtk_grid_attach(GTK_GRID(grid), button, 0,1,4,4);
-  //gtk_grid_insert_column(GTK_GRID(grid), 1);
 
   gtk_widget_show_all(menu);
   g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedMainMenu), mainmenu);

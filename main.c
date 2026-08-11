@@ -1,4 +1,5 @@
 #include <gtk/gtk.h>
+
 #include "backend.h"
 
 static void Actions (GtkApplication *app, gpointer user_data){
@@ -7,6 +8,10 @@ static void Actions (GtkApplication *app, gpointer user_data){
   GtkStyleContext *style;
 
   LoadCss();
+
+  if (g_mkdir_with_parents("entries", 0755) != 0) {
+    perror("Could not create entries directory");
+  }
   
   stack = gtk_stack_new();
 
