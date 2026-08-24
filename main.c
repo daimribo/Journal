@@ -23,12 +23,17 @@ static void Actions (GtkApplication *app, gpointer user_data){
   gtk_container_add(GTK_CONTAINER(window), stack);
 
   //GtkWidget *login_page = Login(stack, style);
+
   GtkWidget *main_menu_page = MainMenu(stack, window, style);
-  GtkWidget *write_space_page = WriteSpace(stack);
+  gtk_stack_add_named(GTK_STACK(stack), main_menu_page, "mainmenu");
+
+  GtkWidget *write_space_page_new = WriteSpace(stack, "new_file");
+  gtk_stack_add_named(GTK_STACK(stack), write_space_page_new, "writespace_newfile");
+
+  GtkWidget *write_space_page_open = WriteSpace(stack, "open_file");
+  gtk_stack_add_named(GTK_STACK(stack), write_space_page_open, "writespace_openfile");
   
   //gtk_stack_add_named(GTK_STACK(stack), login_page, "login");
-  gtk_stack_add_named(GTK_STACK(stack), main_menu_page, "mainmenu");
-  gtk_stack_add_named(GTK_STACK(stack), write_space_page, "writespace");
 
   /*struct stat buffer;
   if (stat ("password.txt", &buffer) != 0) {

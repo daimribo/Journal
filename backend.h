@@ -72,9 +72,19 @@ GtkWidget *CreatePassword (GtkWidget *stack, GtkStyleContext *style){
 }*/
 
 
-GtkWidget *WriteSpace(GtkWidget *stack){
+GtkWidget *WriteSpace(GtkWidget *stack, char *mode){
   GtkWidget *grid;
   grid = gtk_grid_new();
+  if(strcmp(mode, "new_file")){
+    GtkWidget *button;
+    button = gtk_button_new_with_label("new file mode");
+    gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
+  }
+  else if(strcmp(mode, "open_file")){
+    GtkWidget *button;
+    button = gtk_button_new_with_label("open file mode");
+    gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
+  }
   return grid;
 }
 
@@ -123,41 +133,14 @@ static void ButtonClickedCreateEntry(GtkWidget *widget, gpointer data){
   fclose(new_entry);
 }
 
-static void NewEntryMenu(GtkWidget *parent_window, GtkStyleContext *style, GtkWidget *stack){
-  MAINMENU *mainmenu = malloc(sizeof(MAINMENU));
-  GtkWidget *window_popup;
-  GtkWidget *button;
-  GtkWidget *grid;
-
-  mainmenu->stack = stack;
-
-  grid = gtk_grid_new();
-
-  window_popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_container_set_border_width (GTK_CONTAINER (window_popup), 100);
-  gtk_container_add(GTK_CONTAINER(window_popup), grid);
-  gtk_window_set_transient_for(GTK_WINDOW(window_popup), GTK_WINDOW(parent_window));
-  gtk_window_set_position(GTK_WINDOW(window_popup), GTK_WIN_POS_CENTER_ON_PARENT);
-
-  style = gtk_widget_get_style_context(window_popup);
-  gtk_style_context_add_class(style, "window-popup");
-
-  mainmenu->entry = gtk_entry_new();
-  gtk_grid_attach(GTK_GRID(grid), mainmenu->entry, 2,0,1,1);
-  gtk_entry_set_placeholder_text(GTK_ENTRY(mainmenu->entry), "Entry Name");
-
-  button = gtk_button_new_with_label("create");
-  gtk_grid_attach(GTK_GRID(grid), button, 2,2,1,1);
-
-  g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedCreateEntry), mainmenu);
-
-  gtk_widget_show_all(window_popup);
-}
-
 static void ButtonClickedNewEntry(GtkWidget *widget, gpointer data){
   MAINMENU *mainmenu = data;
-  //gtk_stack_set_visible_child_name(GTK_STACK(stack), "writespace");
-  NewEntryMenu(mainmenu->window, mainmenu->style, mainmenu->stack);
+  gtk_stack_set_visible_child_name(GTK_STACK(mainmenu->stack), "writespace_newfile");
+}
+
+static void ButtonClickedOpenEntry(GtkWidget *widget, gpointer data){
+  MAINMENU *mainmenu = data;
+  gtk_stack_set_visible_child_name(GTK_STACK(mainmenu->stack), "writespace_openfile");
 }
 
 GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style){
@@ -192,6 +175,12 @@ GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style
   gtk_menu_button_set_popup(GTK_MENU_BUTTON(button), menu);
 
   g_signal_connect(menu_item, "activate" ,G_CALLBACK(ButtonClickedNewEntry), mainmenu);
+
+  menu_item = gtk_menu_item_new_with_label("open entry");
+  gtk_menu_attach(GTK_MENU(menu), menu_item, 1,3,2,3);
+  gtk_menu_button_set_popup(GTK_MENU_BUTTON(button), menu);
+
+  g_signal_connect(menu_item, "activate" ,G_CALLBACK(ButtonClickedOpenEntry), mainmenu);
 
   image = gtk_image_new_from_file("assets/gear.png");
   button = gtk_button_new();
