@@ -15,77 +15,21 @@ void LoadCss(void){
       g_printerr("Error loading CSS file: %s\n", error->message);
       g_error_free(error);
   } else {
-      GdkScreen *screen = gdk_screen_get_default();
-      gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(css_provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    GdkScreen *screen = gdk_screen_get_default();
+    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(css_provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
   }
   g_object_unref(css_provider);
 }
 
-/*typedef struct Createpassword{
-  GtkWidget *button, *password_entry, *password_reentry, *stack;
-}CREATEPASSWORD;
-
-const void ButtonClickCreatePassword (GtkWidget *widget, gpointer data){
-  CREATEPASSWORD *createpassword = data;
-  const gchar *entry = gtk_entry_get_text(GTK_ENTRY(createpassword->password_entry));
-  const gchar *reentry = gtk_entry_get_text(GTK_ENTRY(createpassword->password_reentry));
-  if(strcmp(entry, reentry) == 0){
-      
-    FILE *password_file;
-    password_file = fopen("password.txt", "w+");
-    fprintf(password_file, "%s", entry);
-    fclose(password_file);
-    g_print("%s\n","password created successfully");
-    gtk_stack_set_visible_child_name(GTK_STACK(createpassword->stack), "login");
-    //free(createpassword);
-    return;
-  }
-  else{
-    g_print("%s\n","passwords are different");
-  }
-}
-
-GtkWidget *CreatePassword (GtkWidget *stack, GtkStyleContext *style){
-  CREATEPASSWORD *createpassword = malloc(sizeof(CREATEPASSWORD));
-
-  GtkWidget *grid = gtk_grid_new();
-  createpassword->stack = stack;
+GtkWidget *WriteSpace(char *filename){
+  g_print("WriteSpace Called!!");
   
-  createpassword->button = gtk_button_new_with_label("Create Password");
-  gtk_grid_attach(GTK_GRID(grid), createpassword->button, 1,3,1,1);
-
-  createpassword->password_entry = gtk_entry_new();
-  gtk_grid_attach(GTK_GRID(grid), createpassword->password_entry, 0,0,3,1);
-  gtk_entry_set_placeholder_text(GTK_ENTRY(createpassword->password_entry), "New password");
-  gtk_entry_set_visibility(GTK_ENTRY(createpassword->password_entry), FALSE);
-  gtk_entry_set_invisible_char(GTK_ENTRY(createpassword->password_entry), '*');
-
-  createpassword->password_reentry = gtk_entry_new();
-  gtk_grid_attach(GTK_GRID(grid), createpassword->password_reentry, 0,2,3,1);
-  gtk_entry_set_placeholder_text(GTK_ENTRY(createpassword->password_reentry), "Reenter password");
-  gtk_entry_set_visibility(GTK_ENTRY(createpassword->password_reentry), FALSE);
-  gtk_entry_set_invisible_char(GTK_ENTRY(createpassword->password_reentry), '*');
-
-  g_signal_connect(createpassword->button, "clicked", G_CALLBACK(ButtonClickCreatePassword), createpassword);
-  //free(createpassword);
-  return grid;
-}*/
-
-
-GtkWidget *WriteSpace(GtkWidget *stack, char *mode, char *filename){
   GtkWidget *grid;
   grid = gtk_grid_new();
-  if(strcmp(mode, "new_file") == 0){
-    GtkWidget *button;
-    button = gtk_button_new_with_label("new file mode");
-    gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
-  }
-  else if(strcmp(mode, "open_file") == 0){
-    GtkWidget *button;
-
-    button = gtk_button_new_with_label("open file mode");
-    gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
-  }
+  GtkWidget *button;
+  button = gtk_button_new_with_label("new file mode");
+  gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
+  gtk_widget_show_all(grid);
   return grid;
 }
 
@@ -126,8 +70,12 @@ static void ButtonClickedMainMenu(GtkWidget *widget, gpointer data){
 }
 
 static void ButtonClickedNewEntry(GtkWidget *widget, gpointer data){
-  MAINMENU *mainmenu = data;
-  gtk_stack_set_visible_child_name(GTK_STACK(mainmenu->stack), "writespace_newfile");
+  GtkStack *stack = GTK_STACK(data);
+
+  GtkWidget *write_space_page_new = WriteSpace(NULL);
+  gtk_stack_add_named(GTK_STACK(stack), write_space_page_new, "writespace_newfile");
+  gtk_widget_show(write_space_page_new);
+  gtk_stack_set_visible_child_name(GTK_STACK(stack), "writespace_newfile");
 }
 
 static void ButtonClickedOpenEntry(GtkWidget *widget, gpointer data){
@@ -146,12 +94,12 @@ static void ButtonClickedOpenEntry(GtkWidget *widget, gpointer data){
 
     g_print("Selected file: %s\n", filename);
   }
-  gtk_widget_destroy(dialog);
+  GtkWidget *write_space_page_open = WriteSpace(filename);
+  gtk_stack_add_named(GTK_STACK(mainmenu->stack), write_space_page_open, "writespace_open");
+  gtk_widget_show(write_space_page_open);
+  gtk_stack_set_visible_child(GTK_STACK(mainmenu->stack), write_space_page_open);
 
-  GtkWidget *write_space_page_open = WriteSpace(mainmenu->stack, "open_file", filename);
-  gtk_stack_add_named(GTK_STACK(mainmenu->stack), write_space_page_open, "writespace_openfile");
-  gtk_stack_set_visible_child_name(GTK_STACK(mainmenu->stack), "writespace_openfile");
-  g_free(filename);
+  gtk_widget_destroy(dialog);
 }
 
 GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style){
@@ -160,20 +108,11 @@ GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style
   GtkWidget *button;
   GtkWidget *menu;
   GtkWidget *menu_item;
-  //GtkWidget *sidebar;
 
   GtkWidget *grid = gtk_grid_new();
   mainmenu->stack = stack;
   mainmenu->window = window;
   mainmenu->style = style;
-
-  /*sidebar = gtk_stack_sidebar_new();
-  gtk_stack_sidebar_set_stack(GTK_STACK_SIDEBAR(sidebar), GTK_STACK(stack));
-  gtk_stack_add_named(GTK_STACK(stack), sidebar, "sidebar");
-  gtk_stack_set_visible_child_name(GTK_STACK(stack), "sidebar");
-
-  style = gtk_widget_get_style_context(sidebar);
-  gtk_style_context_add_class(style, "sidebar");*/
 
   menu = gtk_menu_new();
   button = gtk_menu_button_new();
@@ -185,7 +124,7 @@ GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style
   gtk_menu_attach(GTK_MENU(menu), menu_item, 1,2,1,2);
   gtk_menu_button_set_popup(GTK_MENU_BUTTON(button), menu);
 
-  g_signal_connect(menu_item, "activate" ,G_CALLBACK(ButtonClickedNewEntry), mainmenu);
+  g_signal_connect(menu_item, "activate" ,G_CALLBACK(ButtonClickedNewEntry), stack);
 
   menu_item = gtk_menu_item_new_with_label("open entry");
   gtk_menu_attach(GTK_MENU(menu), menu_item, 1,3,2,3);
@@ -200,56 +139,8 @@ GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style
 
   gtk_widget_show_all(menu);
   g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedMainMenu), mainmenu);
-  //free(mainmenu);
+
   return grid;
 }
-
-
-/*typedef struct Loginsttruct{
-  GtkWidget *button, *password_entry, *stack;
-  char password[100];
-}LOGIN;
-
-static void ButtonClickedLogin (GtkWidget *widget, gpointer data){
-  LOGIN *login = data;
-  const gchar *entry = gtk_entry_get_text(GTK_ENTRY(login->password_entry));
-
-  FILE *password_file;
-  password_file = fopen("password.txt", "r+");
-  fgets(login->password, 100, password_file);
-  fclose(password_file);
-
-  const gchar *password = login->password;
-  g_print("%s\n", entry);
-  g_print("%s\n", password);
-  if(strcmp(entry, password) == 0){
-    g_print("%s\n","password is correct");
-    gtk_stack_set_visible_child_name(GTK_STACK(login->stack), "mainmenu");
-    //free(login);
-  }
-  else{
-    g_print("%s\n","password is incorrect");
-  }
-}
-
-GtkWidget *Login (GtkWidget *stack, GtkStyleContext *style){
-  LOGIN *login = malloc(sizeof(LOGIN));
-
-  GtkWidget *grid = gtk_grid_new();
-  login->stack = stack;
-
-  login->password_entry = gtk_entry_new();
-  gtk_grid_attach(GTK_GRID(grid), login->password_entry, 0,0,1,1);
-  gtk_entry_set_placeholder_text(GTK_ENTRY(login->password_entry), "Enter password");
-  gtk_entry_set_visibility(GTK_ENTRY(login->password_entry), FALSE);
-  gtk_entry_set_invisible_char(GTK_ENTRY(login->password_entry), '*');
-
-  login->button = gtk_button_new_with_label("Enter");
-  gtk_grid_attach(GTK_GRID(grid), login->button, 1,0,1,1);
-
-  g_signal_connect(login->button, "clicked", G_CALLBACK(ButtonClickedLogin), login);
-  //free(login);
-  return grid;
-}*/
 
 #endif
