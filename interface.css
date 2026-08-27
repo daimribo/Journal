@@ -13,13 +13,17 @@ window {
 button {
     background-image: none;
     background-color: #414152;
-    color: #787892; /* text color */
-    /*padding: 10px 20px; Padding around text */
-    border-radius: 5px; /* Rounded corners */
-    /* font-weight: bold; Bold text */
+    color: #787892;
+    padding: 10px 20px; 
+    border-radius: 5px;
 }
 
 button:hover {
-    background-color: #4e4e63; /* Darker green on hover */
+    background-color: #4e4e63;
+    color: #b2b2dd;
+}
+
+.entry-box{
+    background-color : #454555;
     color: #b2b2dd;
 }

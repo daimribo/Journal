@@ -4,6 +4,7 @@
 #include <gtk/gtk.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <stdio.h>
 
 
 void LoadCss(void){
@@ -21,16 +22,33 @@ void LoadCss(void){
   g_object_unref(css_provider);
 }
 
-GtkWidget *WriteSpace(char *filename){
-  g_print("WriteSpace Called!!");
-  
-  GtkWidget *grid;
-  grid = gtk_grid_new();
-  GtkWidget *button;
-  button = gtk_button_new_with_label("new file mode");
-  gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
-  gtk_widget_show_all(grid);
-  return grid;
+GtkWidget *WriteSpace(char *filename, GtkStyleContext *style){
+  GtkWidget *box;
+  GtkWidget *scrolled_window;
+  GtkWidget *entry;
+
+  box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
+  scrolled_window = gtk_scrolled_window_new(NULL,NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+
+  entry = gtk_text_view_new();
+  gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(entry), GTK_WRAP_WORD);
+  gtk_widget_set_hexpand(scrolled_window, TRUE);
+  gtk_widget_set_vexpand(scrolled_window, TRUE);
+  gtk_container_add(GTK_CONTAINER(scrolled_window), entry);
+
+  gtk_text_view_set_left_margin(GTK_TEXT_VIEW(entry), 30);
+  gtk_text_view_set_right_margin(GTK_TEXT_VIEW(entry), 30);
+  gtk_text_view_set_top_margin(GTK_TEXT_VIEW(entry), 20);
+  gtk_text_view_set_bottom_margin(GTK_TEXT_VIEW(entry), 20);
+
+  gtk_box_pack_start(GTK_BOX(box), scrolled_window, TRUE, TRUE, 0);
+  style = gtk_widget_get_style_context(entry);
+  gtk_style_context_add_class(style, "entry-box");
+
+  gtk_widget_show_all(box);
+  return box;
 }
 
 typedef struct Mainmenu{
@@ -66,16 +84,15 @@ static void ButtonClickedMainMenu(GtkWidget *widget, gpointer data){
   MAINMENU *mainmenu = data;
 
   Settings(mainmenu->window, mainmenu->style);
-  //free(mainmenu);
 }
 
 static void ButtonClickedNewEntry(GtkWidget *widget, gpointer data){
-  GtkStack *stack = GTK_STACK(data);
+  MAINMENU *mainmenu = data;
 
-  GtkWidget *write_space_page_new = WriteSpace(NULL);
-  gtk_stack_add_named(GTK_STACK(stack), write_space_page_new, "writespace_newfile");
+  GtkWidget *write_space_page_new = WriteSpace("", mainmenu->style);
+  gtk_stack_add_named(GTK_STACK(mainmenu->stack), write_space_page_new, "writespace_newfile");
   gtk_widget_show(write_space_page_new);
-  gtk_stack_set_visible_child_name(GTK_STACK(stack), "writespace_newfile");
+  gtk_stack_set_visible_child_name(GTK_STACK(mainmenu->stack), "writespace_newfile");
 }
 
 static void ButtonClickedOpenEntry(GtkWidget *widget, gpointer data){
@@ -86,6 +103,8 @@ static void ButtonClickedOpenEntry(GtkWidget *widget, gpointer data){
   dialog = gtk_file_chooser_dialog_new("choose an entry", GTK_WINDOW(mainmenu->window), GTK_FILE_CHOOSER_ACTION_OPEN,
   "_Cancel", GTK_RESPONSE_CANCEL, "_Open", GTK_RESPONSE_ACCEPT, NULL);
 
+  gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), "entries");
+
   response = gtk_dialog_run(GTK_DIALOG(dialog));
   char *filename;
   if (response == GTK_RESPONSE_ACCEPT) {
@@ -94,7 +113,7 @@ static void ButtonClickedOpenEntry(GtkWidget *widget, gpointer data){
 
     g_print("Selected file: %s\n", filename);
   }
-  GtkWidget *write_space_page_open = WriteSpace(filename);
+  GtkWidget *write_space_page_open = WriteSpace(filename, mainmenu->style);
   gtk_stack_add_named(GTK_STACK(mainmenu->stack), write_space_page_open, "writespace_open");
   gtk_widget_show(write_space_page_open);
   gtk_stack_set_visible_child(GTK_STACK(mainmenu->stack), write_space_page_open);
@@ -124,7 +143,7 @@ GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style
   gtk_menu_attach(GTK_MENU(menu), menu_item, 1,2,1,2);
   gtk_menu_button_set_popup(GTK_MENU_BUTTON(button), menu);
 
-  g_signal_connect(menu_item, "activate" ,G_CALLBACK(ButtonClickedNewEntry), stack);
+  g_signal_connect(menu_item, "activate" ,G_CALLBACK(ButtonClickedNewEntry), mainmenu);
 
   menu_item = gtk_menu_item_new_with_label("open entry");
   gtk_menu_attach(GTK_MENU(menu), menu_item, 1,3,2,3);
