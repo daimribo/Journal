@@ -26,12 +26,6 @@ static void Actions (GtkApplication *app, gpointer user_data){
 
   GtkWidget *main_menu_page = MainMenu(stack, window, style);
   gtk_stack_add_named(GTK_STACK(stack), main_menu_page, "mainmenu");
-
-  GtkWidget *write_space_page_new = WriteSpace(stack, "new_file");
-  gtk_stack_add_named(GTK_STACK(stack), write_space_page_new, "writespace_newfile");
-
-  GtkWidget *write_space_page_open = WriteSpace(stack, "open_file");
-  gtk_stack_add_named(GTK_STACK(stack), write_space_page_open, "writespace_openfile");
   
   //gtk_stack_add_named(GTK_STACK(stack), login_page, "login");
 
@@ -48,6 +42,9 @@ static void Actions (GtkApplication *app, gpointer user_data){
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "login");
   }*/
   gtk_stack_set_visible_child_name(GTK_STACK(stack), "mainmenu");
+  GtkWidget *write_space_page_new = WriteSpace(stack, "new_file", NULL);
+  gtk_stack_add_named(GTK_STACK(stack), write_space_page_new, "writespace_newfile");
+
   gtk_widget_show_all(window);
 }
 

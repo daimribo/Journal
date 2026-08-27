@@ -72,16 +72,17 @@ GtkWidget *CreatePassword (GtkWidget *stack, GtkStyleContext *style){
 }*/
 
 
-GtkWidget *WriteSpace(GtkWidget *stack, char *mode){
+GtkWidget *WriteSpace(GtkWidget *stack, char *mode, char *filename){
   GtkWidget *grid;
   grid = gtk_grid_new();
-  if(strcmp(mode, "new_file")){
+  if(strcmp(mode, "new_file") == 0){
     GtkWidget *button;
     button = gtk_button_new_with_label("new file mode");
     gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
   }
-  else if(strcmp(mode, "open_file")){
+  else if(strcmp(mode, "open_file") == 0){
     GtkWidget *button;
+
     button = gtk_button_new_with_label("open file mode");
     gtk_grid_attach(GTK_GRID(grid), button, 0,0,1,1);
   }
@@ -124,15 +125,6 @@ static void ButtonClickedMainMenu(GtkWidget *widget, gpointer data){
   //free(mainmenu);
 }
 
-static void ButtonClickedCreateEntry(GtkWidget *widget, gpointer data){
-  MAINMENU *mainmenu = data;
-  const gchar *entry_name = gtk_entry_get_text(GTK_ENTRY(mainmenu->entry));
-  gchar *filename = g_build_filename("entries", entry_name, NULL);
-  FILE *new_entry;
-  new_entry = fopen(filename, "w+");
-  fclose(new_entry);
-}
-
 static void ButtonClickedNewEntry(GtkWidget *widget, gpointer data){
   MAINMENU *mainmenu = data;
   gtk_stack_set_visible_child_name(GTK_STACK(mainmenu->stack), "writespace_newfile");
@@ -140,7 +132,26 @@ static void ButtonClickedNewEntry(GtkWidget *widget, gpointer data){
 
 static void ButtonClickedOpenEntry(GtkWidget *widget, gpointer data){
   MAINMENU *mainmenu = data;
+  GtkWidget *dialog;
+  gint response;
+
+  dialog = gtk_file_chooser_dialog_new("choose an entry", GTK_WINDOW(mainmenu->window), GTK_FILE_CHOOSER_ACTION_OPEN,
+  "_Cancel", GTK_RESPONSE_CANCEL, "_Open", GTK_RESPONSE_ACCEPT, NULL);
+
+  response = gtk_dialog_run(GTK_DIALOG(dialog));
+  char *filename;
+  if (response == GTK_RESPONSE_ACCEPT) {
+    GtkFileChooser *chooser = GTK_FILE_CHOOSER(dialog);
+    filename = gtk_file_chooser_get_filename(chooser);
+
+    g_print("Selected file: %s\n", filename);
+  }
+  gtk_widget_destroy(dialog);
+
+  GtkWidget *write_space_page_open = WriteSpace(mainmenu->stack, "open_file", filename);
+  gtk_stack_add_named(GTK_STACK(mainmenu->stack), write_space_page_open, "writespace_openfile");
   gtk_stack_set_visible_child_name(GTK_STACK(mainmenu->stack), "writespace_openfile");
+  g_free(filename);
 }
 
 GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style){
