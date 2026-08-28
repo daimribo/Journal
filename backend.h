@@ -22,10 +22,58 @@ void LoadCss(void){
   g_object_unref(css_provider);
 }
 
-GtkWidget *WriteSpace(char *filename, GtkStyleContext *style){
+
+typedef struct Nameentrymenu{
+  GtkWidget *entry, *window_popup;
+  FILE *file;
+}NAMEENTRY;
+
+static void ButtonClickedSetNewEntryName(GtkWidget *widget, gpointer data){
+  NAMEENTRY *nameentry = data;
+  const gchar *tempfilename = gtk_entry_get_text(GTK_ENTRY(nameentry->entry));
+  gchar *filename = g_strdup_printf("entries/%s.txt", tempfilename);
+  nameentry->file = fopen(filename, "w+");
+  gtk_widget_destroy(nameentry->window_popup);
+}
+
+FILE *SetNewEntryName(GtkStyleContext *style, GtkWidget *window){
+  NAMEENTRY *nameentry = malloc(sizeof(NAMEENTRY));
+
+  GtkWidget *button;
+  GtkWidget *grid;
+  FILE *file;
+  nameentry->file = file;
+
+  grid = gtk_grid_new();
+
+  nameentry->window_popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_container_set_border_width (GTK_CONTAINER (nameentry->window_popup), 100);
+  gtk_container_add(GTK_CONTAINER(nameentry->window_popup), grid);
+  gtk_window_set_transient_for(GTK_WINDOW(nameentry->window_popup), GTK_WINDOW(window));
+  gtk_window_set_position(GTK_WINDOW(nameentry->window_popup), GTK_WIN_POS_CENTER_ON_PARENT);
+
+  style = gtk_widget_get_style_context(nameentry->window_popup);
+  gtk_style_context_add_class(style, "window-popup");
+
+  nameentry->entry = gtk_entry_new();
+  gtk_grid_attach(GTK_GRID(grid),nameentry->entry, 2,0,1,1);
+  gtk_entry_set_placeholder_text(GTK_ENTRY(nameentry->entry), "Entry Name");
+
+  button = gtk_button_new_with_label("create");
+  gtk_grid_attach(GTK_GRID(grid), button, 2,2,1,1);
+
+  g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedSetNewEntryName), nameentry);
+
+  gtk_widget_show_all(nameentry->window_popup);
+  return file;
+}
+
+GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window){
   GtkWidget *box;
+  GtkWidget *header_bar;
   GtkWidget *scrolled_window;
   GtkWidget *entry;
+  GtkWidget *button;
 
   box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
@@ -47,12 +95,19 @@ GtkWidget *WriteSpace(char *filename, GtkStyleContext *style){
   style = gtk_widget_get_style_context(entry);
   gtk_style_context_add_class(style, "entry-box");
 
+  header_bar = gtk_header_bar_new();
+
+  if(strcmp(filename, "") == 0){
+    FILE *file;
+    file = SetNewEntryName(style, window);
+  }
+
   gtk_widget_show_all(box);
   return box;
 }
 
 typedef struct Mainmenu{
-  GtkWidget *window, *stack, *entry;
+  GtkWidget *window, *stack;
   GtkStyleContext *style;
 }MAINMENU;
 
@@ -80,7 +135,7 @@ static void Settings (GtkWidget *parent_window, GtkStyleContext *style){
   gtk_widget_show_all(window_popup);
 }
 
-static void ButtonClickedMainMenu(GtkWidget *widget, gpointer data){
+static void ButtonClickedSettings(GtkWidget *widget, gpointer data){
   MAINMENU *mainmenu = data;
 
   Settings(mainmenu->window, mainmenu->style);
@@ -89,7 +144,7 @@ static void ButtonClickedMainMenu(GtkWidget *widget, gpointer data){
 static void ButtonClickedNewEntry(GtkWidget *widget, gpointer data){
   MAINMENU *mainmenu = data;
 
-  GtkWidget *write_space_page_new = WriteSpace("", mainmenu->style);
+  GtkWidget *write_space_page_new = WriteSpace("", mainmenu->style, mainmenu->window);
   gtk_stack_add_named(GTK_STACK(mainmenu->stack), write_space_page_new, "writespace_newfile");
   gtk_widget_show(write_space_page_new);
   gtk_stack_set_visible_child_name(GTK_STACK(mainmenu->stack), "writespace_newfile");
@@ -113,7 +168,7 @@ static void ButtonClickedOpenEntry(GtkWidget *widget, gpointer data){
 
     g_print("Selected file: %s\n", filename);
   }
-  GtkWidget *write_space_page_open = WriteSpace(filename, mainmenu->style);
+  GtkWidget *write_space_page_open = WriteSpace(filename, mainmenu->style, mainmenu->window);
   gtk_stack_add_named(GTK_STACK(mainmenu->stack), write_space_page_open, "writespace_open");
   gtk_widget_show(write_space_page_open);
   gtk_stack_set_visible_child(GTK_STACK(mainmenu->stack), write_space_page_open);
@@ -135,7 +190,6 @@ GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style
 
   menu = gtk_menu_new();
   button = gtk_menu_button_new();
-  //gtk_widget_set_valign(button, GTK_ALIGN_START);
   gtk_menu_button_set_direction(GTK_MENU_BUTTON(button), GTK_ARROW_RIGHT);
   gtk_grid_attach(GTK_GRID(grid), button, 0,0,4,1);
 
@@ -157,7 +211,7 @@ GtkWidget *MainMenu (GtkWidget *stack, GtkWidget *window, GtkStyleContext *style
   gtk_grid_attach(GTK_GRID(grid), button, 0,1,4,4);
 
   gtk_widget_show_all(menu);
-  g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedMainMenu), mainmenu);
+  g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedSettings), mainmenu);
 
   return grid;
 }
