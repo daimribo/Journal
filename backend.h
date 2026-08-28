@@ -25,54 +25,44 @@ void LoadCss(void){
 
 
 typedef struct{
-  GtkWidget *entry, *window_popup;
+  GtkWidget *entry, *window_popup, *textview;
   FILE *file;
-}NAMEENTRY;
+}SAVE;
 
 static void ButtonClickedSetNewEntryName(GtkWidget *widget, gpointer data){
-  NAMEENTRY *nameentry = data;
-  const gchar *tempfilename = gtk_entry_get_text(GTK_ENTRY(nameentry->entry));
+  SAVE *save = data;
+  const gchar *tempfilename = gtk_entry_get_text(GTK_ENTRY(save->entry));
   gchar *filename = g_strdup_printf("entries/%s.txt", tempfilename);
-  nameentry->file = fopen(filename, "w+");
-  gtk_widget_destroy(nameentry->window_popup);
+  save->file = fopen(filename, "w+");
+  gtk_widget_destroy(save->window_popup);
 }
 
-FILE *SetNewEntryName(GtkStyleContext *style, GtkWidget *window){
-  NAMEENTRY *nameentry = malloc(sizeof(NAMEENTRY));
-
+static void SetNewEntryName(GtkStyleContext *style, GtkWidget *window, SAVE *save){
   GtkWidget *button;
   GtkWidget *grid;
-  FILE *file;
-  nameentry->file = file;
 
   grid = gtk_grid_new();
 
-  nameentry->window_popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_container_set_border_width (GTK_CONTAINER (nameentry->window_popup), 100);
-  gtk_container_add(GTK_CONTAINER(nameentry->window_popup), grid);
-  gtk_window_set_transient_for(GTK_WINDOW(nameentry->window_popup), GTK_WINDOW(window));
-  gtk_window_set_position(GTK_WINDOW(nameentry->window_popup), GTK_WIN_POS_CENTER_ON_PARENT);
+  save->window_popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_container_set_border_width (GTK_CONTAINER (save->window_popup), 100);
+  gtk_container_add(GTK_CONTAINER(save->window_popup), grid);
+  gtk_window_set_transient_for(GTK_WINDOW(save->window_popup), GTK_WINDOW(window));
+  gtk_window_set_position(GTK_WINDOW(save->window_popup), GTK_WIN_POS_CENTER_ON_PARENT);
 
-  style = gtk_widget_get_style_context(nameentry->window_popup);
+  style = gtk_widget_get_style_context(save->window_popup);
   gtk_style_context_add_class(style, "window-popup");
 
-  nameentry->entry = gtk_entry_new();
-  gtk_grid_attach(GTK_GRID(grid),nameentry->entry, 2,0,1,1);
-  gtk_entry_set_placeholder_text(GTK_ENTRY(nameentry->entry), "Entry Name");
+  save->entry = gtk_entry_new();
+  gtk_grid_attach(GTK_GRID(grid),save->entry, 2,0,1,1);
+  gtk_entry_set_placeholder_text(GTK_ENTRY(save->entry), "Entry Name");
 
   button = gtk_button_new_with_label("create");
   gtk_grid_attach(GTK_GRID(grid), button, 2,2,1,1);
 
-  g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedSetNewEntryName), nameentry);
+  g_signal_connect(button, "clicked", G_CALLBACK(ButtonClickedSetNewEntryName), save);
 
-  gtk_widget_show_all(nameentry->window_popup);
-  return file;
+  gtk_widget_show_all(save->window_popup);
 }
-
-typedef struct{
-  GtkWidget *entry;
-  FILE *file;
-}SAVE;
 
 static void SaveButton(GtkWidget *widget, gpointer data){
   SAVE *save = data;
@@ -81,7 +71,7 @@ static void SaveButton(GtkWidget *widget, gpointer data){
   GtkTextIter start, end;
   gchar *text;
   
-  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->entry));
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->textview));
   gtk_text_buffer_get_start_iter(buffer, &start);
   gtk_text_buffer_get_end_iter(buffer, &end);
 
@@ -90,7 +80,7 @@ static void SaveButton(GtkWidget *widget, gpointer data){
   fseek(save->file, 0, SEEK_SET);
   ftruncate(fileno(save->file), 0);
 
-  fprintf(save->file, text);
+  fprintf(save->file, "%s", text);
 }
 
 GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window){
@@ -106,29 +96,29 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window
   scrolled_window = gtk_scrolled_window_new(NULL,NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
-  save->entry = gtk_text_view_new();
-  gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(save->entry), GTK_WRAP_WORD);
+  save->textview = gtk_text_view_new();
+  gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(save->textview), GTK_WRAP_WORD);
   gtk_widget_set_hexpand(scrolled_window, TRUE);
   gtk_widget_set_vexpand(scrolled_window, TRUE);
-  gtk_container_add(GTK_CONTAINER(scrolled_window), save->entry);
+  gtk_container_add(GTK_CONTAINER(scrolled_window), save->textview);
 
-  gtk_text_view_set_left_margin(GTK_TEXT_VIEW(save->entry), 30);
-  gtk_text_view_set_right_margin(GTK_TEXT_VIEW(save->entry), 30);
-  gtk_text_view_set_top_margin(GTK_TEXT_VIEW(save->entry), 20);
-  gtk_text_view_set_bottom_margin(GTK_TEXT_VIEW(save->entry), 20);
+  gtk_text_view_set_left_margin(GTK_TEXT_VIEW(save->textview), 30);
+  gtk_text_view_set_right_margin(GTK_TEXT_VIEW(save->textview), 30);
+  gtk_text_view_set_top_margin(GTK_TEXT_VIEW(save->textview), 20);
+  gtk_text_view_set_bottom_margin(GTK_TEXT_VIEW(save->textview), 20);
 
   gtk_box_pack_end(GTK_BOX(box), scrolled_window, TRUE, TRUE, 0);
-  style = gtk_widget_get_style_context(save->entry);
+  style = gtk_widget_get_style_context(save->textview);
   gtk_style_context_add_class(style, "entry-box");
 
   if(strcmp(filename, "") == 0){
-    save->file = SetNewEntryName(style, window);
+    SetNewEntryName(style, window, save);
   }
   else{
     GtkTextBuffer *buffer;
     char file_content[100];
     save->file = fopen(filename, "r+");
-    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->entry));
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->textview));
 
     gtk_text_buffer_set_text(buffer, "", -1); //clears the buffer
     while(fgets(file_content, 100, save->file)) {
