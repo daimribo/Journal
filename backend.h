@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 
 void LoadCss(void){
@@ -86,6 +87,9 @@ static void SaveButton(GtkWidget *widget, gpointer data){
 
   text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
 
+  fseek(save->file, 0, SEEK_SET);
+  ftruncate(fileno(save->file), 0);
+
   fprintf(save->file, text);
 }
 
@@ -121,7 +125,15 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window
     save->file = SetNewEntryName(style, window);
   }
   else{
-    save->file = fopen(filename, "w+");
+    GtkTextBuffer *buffer;
+    char file_content[100];
+    save->file = fopen(filename, "r+");
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->entry));
+
+    gtk_text_buffer_set_text(buffer, "", -1); //clears the buffer
+    while(fgets(file_content, 100, save->file)) {
+     gtk_text_buffer_insert_at_cursor(buffer, file_content, -1); 
+    }
   }
 
   header_bar = gtk_header_bar_new();
@@ -133,6 +145,7 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window
   gtk_box_pack_start(GTK_BOX(box), header_bar, FALSE, TRUE, 10);
 
   gtk_widget_show_all(box);
+  //fclose(save->file);
   return box;
 }
 
