@@ -23,7 +23,7 @@ void LoadCss(void){
 }
 
 
-typedef struct Nameentrymenu{
+typedef struct{
   GtkWidget *entry, *window_popup;
   FILE *file;
 }NAMEENTRY;
@@ -68,11 +68,33 @@ FILE *SetNewEntryName(GtkStyleContext *style, GtkWidget *window){
   return file;
 }
 
+typedef struct{
+  GtkWidget *entry;
+  FILE *file;
+}SAVE;
+
+static void SaveButton(GtkWidget *widget, gpointer data){
+  SAVE *save = data;
+
+  GtkTextBuffer *buffer;
+  GtkTextIter start, end;
+  gchar *text;
+  
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->entry));
+  gtk_text_buffer_get_start_iter(buffer, &start);
+  gtk_text_buffer_get_end_iter(buffer, &end);
+
+  text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+
+  fprintf(save->file, text);
+}
+
 GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window){
+  SAVE *save = malloc(sizeof(SAVE));
+
   GtkWidget *box;
   GtkWidget *header_bar;
   GtkWidget *scrolled_window;
-  GtkWidget *entry;
   GtkWidget *button;
 
   box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -80,33 +102,41 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window
   scrolled_window = gtk_scrolled_window_new(NULL,NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
-  entry = gtk_text_view_new();
-  gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(entry), GTK_WRAP_WORD);
+  save->entry = gtk_text_view_new();
+  gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(save->entry), GTK_WRAP_WORD);
   gtk_widget_set_hexpand(scrolled_window, TRUE);
   gtk_widget_set_vexpand(scrolled_window, TRUE);
-  gtk_container_add(GTK_CONTAINER(scrolled_window), entry);
+  gtk_container_add(GTK_CONTAINER(scrolled_window), save->entry);
 
-  gtk_text_view_set_left_margin(GTK_TEXT_VIEW(entry), 30);
-  gtk_text_view_set_right_margin(GTK_TEXT_VIEW(entry), 30);
-  gtk_text_view_set_top_margin(GTK_TEXT_VIEW(entry), 20);
-  gtk_text_view_set_bottom_margin(GTK_TEXT_VIEW(entry), 20);
+  gtk_text_view_set_left_margin(GTK_TEXT_VIEW(save->entry), 30);
+  gtk_text_view_set_right_margin(GTK_TEXT_VIEW(save->entry), 30);
+  gtk_text_view_set_top_margin(GTK_TEXT_VIEW(save->entry), 20);
+  gtk_text_view_set_bottom_margin(GTK_TEXT_VIEW(save->entry), 20);
 
-  gtk_box_pack_start(GTK_BOX(box), scrolled_window, TRUE, TRUE, 0);
-  style = gtk_widget_get_style_context(entry);
+  gtk_box_pack_end(GTK_BOX(box), scrolled_window, TRUE, TRUE, 0);
+  style = gtk_widget_get_style_context(save->entry);
   gtk_style_context_add_class(style, "entry-box");
 
-  header_bar = gtk_header_bar_new();
-
   if(strcmp(filename, "") == 0){
-    FILE *file;
-    file = SetNewEntryName(style, window);
+    save->file = SetNewEntryName(style, window);
   }
+  else{
+    save->file = fopen(filename, "w+");
+  }
+
+  header_bar = gtk_header_bar_new();
+  
+  button = gtk_button_new_with_label("save");
+  g_signal_connect(button, "clicked", G_CALLBACK(SaveButton), save);
+  gtk_header_bar_pack_start(GTK_HEADER_BAR(header_bar), button);
+
+  gtk_box_pack_start(GTK_BOX(box), header_bar, FALSE, TRUE, 10);
 
   gtk_widget_show_all(box);
   return box;
 }
 
-typedef struct Mainmenu{
+typedef struct{
   GtkWidget *window, *stack;
   GtkStyleContext *style;
 }MAINMENU;
