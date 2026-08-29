@@ -81,9 +81,25 @@ static void SaveButton(GtkWidget *widget, gpointer data){
   ftruncate(fileno(save->file), 0);
 
   fprintf(save->file, "%s", text);
+  fflush(save->file);
 }
 
-GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window){
+static void MainMenuButton(GtkWidget *widget, gpointer data){
+  GtkWidget *stack = data;
+
+  GtkWidget *openfile_child = gtk_stack_get_child_by_name(GTK_STACK(stack), "writespace_open");
+  if(openfile_child != NULL){
+    gtk_container_remove(GTK_CONTAINER(stack), openfile_child);
+  }
+  GtkWidget *newfile_child = gtk_stack_get_child_by_name(GTK_STACK(stack), "writespace_newfile");
+  if(newfile_child != NULL){
+    gtk_container_remove(GTK_CONTAINER(stack), newfile_child);
+  }
+
+  gtk_stack_set_visible_child_name(GTK_STACK(stack), "mainmenu");
+}
+
+GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window, GtkWidget *stack){
   SAVE *save = malloc(sizeof(SAVE));
 
   GtkWidget *box;
@@ -127,6 +143,10 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window
   }
 
   header_bar = gtk_header_bar_new();
+
+  button = gtk_button_new_with_label("main menu");
+  g_signal_connect(button, "clicked", G_CALLBACK(MainMenuButton), stack);
+  gtk_header_bar_pack_start(GTK_HEADER_BAR(header_bar), button);
   
   button = gtk_button_new_with_label("save");
   g_signal_connect(button, "clicked", G_CALLBACK(SaveButton), save);
@@ -177,7 +197,7 @@ static void ButtonClickedSettings(GtkWidget *widget, gpointer data){
 static void ButtonClickedNewEntry(GtkWidget *widget, gpointer data){
   MAINMENU *mainmenu = data;
 
-  GtkWidget *write_space_page_new = WriteSpace("", mainmenu->style, mainmenu->window);
+  GtkWidget *write_space_page_new = WriteSpace("", mainmenu->style, mainmenu->window, mainmenu->stack);
   gtk_stack_add_named(GTK_STACK(mainmenu->stack), write_space_page_new, "writespace_newfile");
   gtk_widget_show(write_space_page_new);
   gtk_stack_set_visible_child_name(GTK_STACK(mainmenu->stack), "writespace_newfile");
@@ -201,7 +221,11 @@ static void ButtonClickedOpenEntry(GtkWidget *widget, gpointer data){
 
     g_print("Selected file: %s\n", filename);
   }
-  GtkWidget *write_space_page_open = WriteSpace(filename, mainmenu->style, mainmenu->window);
+  else{
+    gtk_widget_destroy(dialog);
+    return;
+  }
+  GtkWidget *write_space_page_open = WriteSpace(filename, mainmenu->style, mainmenu->window, mainmenu->stack);
   gtk_stack_add_named(GTK_STACK(mainmenu->stack), write_space_page_open, "writespace_open");
   gtk_widget_show(write_space_page_open);
   gtk_stack_set_visible_child(GTK_STACK(mainmenu->stack), write_space_page_open);
