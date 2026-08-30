@@ -25,7 +25,7 @@ void LoadCss(void){
 
 
 typedef struct{
-  GtkWidget *entry, *window_popup, *textview;
+  GtkWidget *entry, *window_popup, *textview, *statusbar;
   FILE *file;
 }SAVE;
 
@@ -33,8 +33,15 @@ static void ButtonClickedSetNewEntryName(GtkWidget *widget, gpointer data){
   SAVE *save = data;
   const gchar *tempfilename = gtk_entry_get_text(GTK_ENTRY(save->entry));
   gchar *filename = g_strdup_printf("entries/%s.txt", tempfilename);
-  save->file = fopen(filename, "w+");
-  gtk_widget_destroy(save->window_popup);
+
+  if (g_file_test(filename, G_FILE_TEST_EXISTS)) {
+    gtk_statusbar_push(GTK_STATUSBAR(save->statusbar), 1, "File of that name exists already!");
+  }
+  else{
+   save->file = fopen(filename, "w+");
+    gtk_widget_destroy(save->window_popup); 
+  }
+  
 }
 
 static void SetNewEntryName(GtkStyleContext *style, GtkWidget *window, SAVE *save){
@@ -55,6 +62,9 @@ static void SetNewEntryName(GtkStyleContext *style, GtkWidget *window, SAVE *sav
   save->entry = gtk_entry_new();
   gtk_grid_attach(GTK_GRID(grid),save->entry, 2,0,1,1);
   gtk_entry_set_placeholder_text(GTK_ENTRY(save->entry), "Entry Name");
+
+  save->statusbar = gtk_statusbar_new();
+  gtk_grid_attach(GTK_GRID(grid), save->statusbar, 2,3,1,1);
 
   button = gtk_button_new_with_label("create");
   gtk_grid_attach(GTK_GRID(grid), button, 2,2,1,1);
