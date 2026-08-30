@@ -29,6 +29,21 @@ typedef struct{
   FILE *file;
 }SAVE;
 
+static void MainMenuButton(GtkWidget *widget, gpointer data){
+  GtkWidget *stack = data;
+
+  GtkWidget *openfile_child = gtk_stack_get_child_by_name(GTK_STACK(stack), "writespace_open");
+  if(openfile_child != NULL){
+    gtk_container_remove(GTK_CONTAINER(stack), openfile_child);
+  }
+  GtkWidget *newfile_child = gtk_stack_get_child_by_name(GTK_STACK(stack), "writespace_newfile");
+  if(newfile_child != NULL){
+    gtk_container_remove(GTK_CONTAINER(stack), newfile_child);
+  }
+
+  gtk_stack_set_visible_child_name(GTK_STACK(stack), "mainmenu");
+}
+
 static void ButtonClickedSetNewEntryName(GtkWidget *widget, gpointer data){
   SAVE *save = data;
   const gchar *tempfilename = gtk_entry_get_text(GTK_ENTRY(save->entry));
@@ -41,10 +56,17 @@ static void ButtonClickedSetNewEntryName(GtkWidget *widget, gpointer data){
    save->file = fopen(filename, "w+");
     gtk_widget_destroy(save->window_popup); 
   }
-  
 }
 
-static void SetNewEntryName(GtkStyleContext *style, GtkWidget *window, SAVE *save){
+static gboolean PopupClose(GtkWidget *widget, GdkEvent *event, gpointer data){
+  GtkWidget *stack = GTK_WIDGET(data);
+
+  MainMenuButton(NULL, stack);
+
+  return FALSE;
+}
+
+static void SetNewEntryName(GtkStyleContext *style, GtkWidget *window, SAVE *save, GtkWidget *stack){
   GtkWidget *button;
   GtkWidget *grid;
 
@@ -58,6 +80,8 @@ static void SetNewEntryName(GtkStyleContext *style, GtkWidget *window, SAVE *sav
 
   style = gtk_widget_get_style_context(save->window_popup);
   gtk_style_context_add_class(style, "window-popup");
+
+  g_signal_connect(save->window_popup, "delete-event", G_CALLBACK(PopupClose), stack);
 
   save->entry = gtk_entry_new();
   gtk_grid_attach(GTK_GRID(grid),save->entry, 2,0,1,1);
@@ -94,21 +118,6 @@ static void SaveButton(GtkWidget *widget, gpointer data){
   fflush(save->file);
 }
 
-static void MainMenuButton(GtkWidget *widget, gpointer data){
-  GtkWidget *stack = data;
-
-  GtkWidget *openfile_child = gtk_stack_get_child_by_name(GTK_STACK(stack), "writespace_open");
-  if(openfile_child != NULL){
-    gtk_container_remove(GTK_CONTAINER(stack), openfile_child);
-  }
-  GtkWidget *newfile_child = gtk_stack_get_child_by_name(GTK_STACK(stack), "writespace_newfile");
-  if(newfile_child != NULL){
-    gtk_container_remove(GTK_CONTAINER(stack), newfile_child);
-  }
-
-  gtk_stack_set_visible_child_name(GTK_STACK(stack), "mainmenu");
-}
-
 GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window, GtkWidget *stack){
   SAVE *save = malloc(sizeof(SAVE));
 
@@ -138,7 +147,7 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style, GtkWidget *window
   gtk_style_context_add_class(style, "entry-box");
 
   if(strcmp(filename, "") == 0){
-    SetNewEntryName(style, window, save);
+    SetNewEntryName(style, window, save, stack);
   }
   else{
     GtkTextBuffer *buffer;
