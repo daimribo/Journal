@@ -1,0 +1,18 @@
+id : org.flatpak.Journal
+runtime : org.freedesktop.Platform
+runtime-version : '25.08'
+sdk : org.freedesktop.Sdk
+command : journal
+modules :
+  - name : journal
+    buildsystem : cmake
+    build-commands :
+      - cmake
+    sources :
+      - type : dir
+        path : .
+finish-args:
+- --share=ipc
+- --socket=x11
+- --socket=wayland
+

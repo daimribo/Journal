@@ -13,3 +13,5 @@ target_sources(journal PRIVATE main.c)
 target_include_directories(journal PRIVATE ${GTK3_INCLUDE_DIRS})
 target_link_directories(journal PRIVATE ${GTK3_LIBRARY_DIRS})
 target_link_libraries(journal PRIVATE ${GTK3_LIBRARIES})
+
+install(TARGETS journal DESTINATION bin)
