@@ -1,8 +1,7 @@
+#include "backend.h"
 #include <gtk/gtk.h>
 
-#include "backend.h"
-
-static void Actions (GtkApplication *app, gpointer user_data){
+static void Actions(GtkApplication *app, gpointer user_data) {
   GtkWidget *window;
   GtkWidget *stack;
   GtkStyleContext *style;
@@ -12,7 +11,7 @@ static void Actions (GtkApplication *app, gpointer user_data){
   if (g_mkdir_with_parents("entries", 0755) != 0) {
     perror("Could not create entries directory");
   }
-  
+
   stack = gtk_stack_new();
 
   window = gtk_application_window_new(app);
@@ -28,15 +27,15 @@ static void Actions (GtkApplication *app, gpointer user_data){
   gtk_widget_show_all(window);
 }
 
-int main (int argc, char **argv){
+int main(int argc, char **argv) {
   GtkApplication *app;
   int status;
 
-  app = gtk_application_new (NULL, G_APPLICATION_DEFAULT_FLAGS);
-  g_signal_connect (app, "activate", G_CALLBACK (Actions), NULL);
-  status = g_application_run (G_APPLICATION (app), argc, argv);
+  app = gtk_application_new(NULL, G_APPLICATION_DEFAULT_FLAGS);
+  g_signal_connect(app, "activate", G_CALLBACK(Actions), NULL);
+  status = g_application_run(G_APPLICATION(app), argc, argv);
 
-  g_object_unref (app);
+  g_object_unref(app);
 
   return status;
 }
