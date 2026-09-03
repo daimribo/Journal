@@ -26,8 +26,10 @@ void LoadCss(void) {
 }
 
 typedef struct {
-  GtkWidget *entry, *window_popup, *textview, *statusbar, *window;
+  GtkWidget *entry, *window_popup, *textview, *statusbar, *window,
+      *phrase_entry;
   FILE *file;
+  const gchar *passphrase;
 } SAVE;
 
 static void MainMenuButton(GtkWidget *widget, gpointer data) {
@@ -47,8 +49,16 @@ static void MainMenuButton(GtkWidget *widget, gpointer data) {
   gtk_stack_set_visible_child_name(GTK_STACK(stack), "mainmenu");
 }
 
+static void GetPassphrase(GtkWidget *widget, gpointer data) {
+  SAVE *save = data;
+  save->passphrase = gtk_entry_get_text(GTK_ENTRY(save->phrase_entry));
+  if (strcmp(save->passphrase, "") != 0) {
+    g_print(save->passphrase);
+    gtk_widget_destroy(save->window_popup);
+  }
+}
+
 static void PassphrasePopUp(SAVE *save, const char *title, GtkWidget *window) {
-  GtkWidget *phrase_entry;
   GtkWidget *grid;
   GtkWidget *button;
 
@@ -63,10 +73,11 @@ static void PassphrasePopUp(SAVE *save, const char *title, GtkWidget *window) {
                           GTK_WIN_POS_CENTER_ON_PARENT);
   gtk_window_set_title(GTK_WINDOW(save->window_popup), title);
 
-  phrase_entry = gtk_entry_new();
-  gtk_grid_attach(GTK_GRID(grid), phrase_entry, 0, 0, 1, 1);
+  save->phrase_entry = gtk_entry_new();
+  gtk_grid_attach(GTK_GRID(grid), save->phrase_entry, 0, 0, 1, 1);
 
   button = gtk_button_new_with_label("enter");
+  g_signal_connect(button, "clicked", G_CALLBACK(GetPassphrase), save);
   gtk_grid_attach(GTK_GRID(grid), button, 1, 0, 1, 1);
 
   gtk_widget_show_all(save->window_popup);
