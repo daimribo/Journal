@@ -126,6 +126,18 @@ static void SaveButton(GtkWidget *widget, gpointer data) {
   fflush(save->file);
 }
 
+static void DisplayFileContents(SAVE *save, gchar *filename) {
+  GtkTextBuffer *buffer;
+  char file_content[100];
+  save->file = fopen(filename, "r+");
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->textview));
+
+  gtk_text_buffer_set_text(buffer, "", -1); // clears the buffer
+  while (fgets(file_content, 100, save->file)) {
+    gtk_text_buffer_insert_at_cursor(buffer, file_content, -1);
+  }
+}
+
 GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style,
                       GtkWidget *window, GtkWidget *stack) {
   SAVE *save = malloc(sizeof(SAVE));
@@ -159,15 +171,7 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style,
   if (strcmp(filename, "") == 0) {
     SetNewEntryName(style, window, save, stack);
   } else {
-    GtkTextBuffer *buffer;
-    char file_content[100];
-    save->file = fopen(filename, "r+");
-    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->textview));
-
-    gtk_text_buffer_set_text(buffer, "", -1); // clears the buffer
-    while (fgets(file_content, 100, save->file)) {
-      gtk_text_buffer_insert_at_cursor(buffer, file_content, -1);
-    }
+    DisplayFileContents(save, filename);
   }
 
   header_bar = gtk_header_bar_new();
