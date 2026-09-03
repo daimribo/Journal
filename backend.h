@@ -26,7 +26,7 @@ void LoadCss(void) {
 }
 
 typedef struct {
-  GtkWidget *entry, *window_popup, *textview, *statusbar;
+  GtkWidget *entry, *window_popup, *textview, *statusbar, *window;
   FILE *file;
 } SAVE;
 
@@ -47,6 +47,31 @@ static void MainMenuButton(GtkWidget *widget, gpointer data) {
   gtk_stack_set_visible_child_name(GTK_STACK(stack), "mainmenu");
 }
 
+static void PassphrasePopUp(SAVE *save, const char *title, GtkWidget *window) {
+  GtkWidget *phrase_entry;
+  GtkWidget *grid;
+  GtkWidget *button;
+
+  grid = gtk_grid_new();
+
+  save->window_popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_container_set_border_width(GTK_CONTAINER(save->window_popup), 100);
+  gtk_container_add(GTK_CONTAINER(save->window_popup), grid);
+  gtk_window_set_transient_for(GTK_WINDOW(save->window_popup),
+                               GTK_WINDOW(window));
+  gtk_window_set_position(GTK_WINDOW(save->window_popup),
+                          GTK_WIN_POS_CENTER_ON_PARENT);
+  gtk_window_set_title(GTK_WINDOW(save->window_popup), title);
+
+  phrase_entry = gtk_entry_new();
+  gtk_grid_attach(GTK_GRID(grid), phrase_entry, 0, 0, 1, 1);
+
+  button = gtk_button_new_with_label("enter");
+  gtk_grid_attach(GTK_GRID(grid), button, 1, 0, 1, 1);
+
+  gtk_widget_show_all(save->window_popup);
+}
+
 static void ButtonClickedSetNewEntryName(GtkWidget *widget, gpointer data) {
   SAVE *save = data;
   const gchar *tempfilename = gtk_entry_get_text(GTK_ENTRY(save->entry));
@@ -59,6 +84,7 @@ static void ButtonClickedSetNewEntryName(GtkWidget *widget, gpointer data) {
     save->file = fopen(filename, "w+");
     gtk_widget_destroy(save->window_popup);
   }
+  PassphrasePopUp(save, "Set passphrase", save->window);
 }
 
 static gboolean PopupClose(GtkWidget *widget, GdkEvent *event, gpointer data) {
@@ -73,6 +99,8 @@ static void SetNewEntryName(GtkStyleContext *style, GtkWidget *window,
                             SAVE *save, GtkWidget *stack) {
   GtkWidget *button;
   GtkWidget *grid;
+
+  save->window = window;
 
   grid = gtk_grid_new();
 
@@ -171,7 +199,8 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style,
   if (strcmp(filename, "") == 0) {
     SetNewEntryName(style, window, save, stack);
   } else {
-    DisplayFileContents(save, filename);
+    // DisplayFileContents(save, filename);
+    PassphrasePopUp(save, "enter the passphrase", window);
   }
 
   header_bar = gtk_header_bar_new();
