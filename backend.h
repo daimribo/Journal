@@ -29,7 +29,7 @@ typedef struct {
   GtkWidget *entry, *window_popup, *textview, *statusbar, *window,
       *phrase_entry;
   FILE *file;
-  const gchar *passphrase;
+  const gchar *passphrase, *filename;
 } SAVE;
 
 static void MainMenuButton(GtkWidget *widget, gpointer data) {
@@ -49,6 +49,18 @@ static void MainMenuButton(GtkWidget *widget, gpointer data) {
   gtk_stack_set_visible_child_name(GTK_STACK(stack), "mainmenu");
 }
 
+static void DisplayFileContents(SAVE *save, const gchar *filename) {
+  GtkTextBuffer *buffer;
+  char file_content[100];
+  save->file = fopen(filename, "r+");
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->textview));
+
+  gtk_text_buffer_set_text(buffer, "", -1); // clears the buffer
+  while (fgets(file_content, 100, save->file)) {
+    gtk_text_buffer_insert_at_cursor(buffer, file_content, -1);
+  }
+}
+
 static void GetPassphrase(GtkWidget *widget, gpointer data) {
   SAVE *save = data;
   save->passphrase = gtk_entry_get_text(GTK_ENTRY(save->phrase_entry));
@@ -56,6 +68,7 @@ static void GetPassphrase(GtkWidget *widget, gpointer data) {
     g_print(save->passphrase);
     gtk_widget_destroy(save->window_popup);
   }
+  DisplayFileContents(save, save->filename);
 }
 
 static void PassphrasePopUp(SAVE *save, const char *title, GtkWidget *window) {
@@ -86,13 +99,13 @@ static void PassphrasePopUp(SAVE *save, const char *title, GtkWidget *window) {
 static void ButtonClickedSetNewEntryName(GtkWidget *widget, gpointer data) {
   SAVE *save = data;
   const gchar *tempfilename = gtk_entry_get_text(GTK_ENTRY(save->entry));
-  gchar *filename = g_strdup_printf("entries/%s.txt", tempfilename);
+  save->filename = g_strdup_printf("entries/%s.txt", tempfilename);
 
-  if (g_file_test(filename, G_FILE_TEST_EXISTS)) {
+  if (g_file_test(save->filename, G_FILE_TEST_EXISTS)) {
     gtk_statusbar_push(GTK_STATUSBAR(save->statusbar), 1,
                        "File of that name exists already!");
   } else {
-    save->file = fopen(filename, "w+");
+    save->file = fopen(save->filename, "w+");
     gtk_widget_destroy(save->window_popup);
   }
   PassphrasePopUp(save, "Set passphrase", save->window);
@@ -165,18 +178,6 @@ static void SaveButton(GtkWidget *widget, gpointer data) {
   fflush(save->file);
 }
 
-static void DisplayFileContents(SAVE *save, gchar *filename) {
-  GtkTextBuffer *buffer;
-  char file_content[100];
-  save->file = fopen(filename, "r+");
-  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->textview));
-
-  gtk_text_buffer_set_text(buffer, "", -1); // clears the buffer
-  while (fgets(file_content, 100, save->file)) {
-    gtk_text_buffer_insert_at_cursor(buffer, file_content, -1);
-  }
-}
-
 GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style,
                       GtkWidget *window, GtkWidget *stack) {
   SAVE *save = malloc(sizeof(SAVE));
@@ -210,7 +211,7 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style,
   if (strcmp(filename, "") == 0) {
     SetNewEntryName(style, window, save, stack);
   } else {
-    // DisplayFileContents(save, filename);
+    save->filename = filename;
     PassphrasePopUp(save, "enter the passphrase", window);
   }
 
