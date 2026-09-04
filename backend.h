@@ -2,6 +2,7 @@
 #ifndef BACKEND_H
 #define BACKEND_H
 #include <gtk/gtk.h>
+#include <sodium.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -23,6 +24,47 @@ void LoadCss(void) {
         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
   }
   g_object_unref(css_provider);
+}
+
+typedef struct {
+  unsigned char salt[crypto_pwhash_SALTBYTES];
+  unsigned char nonce[crypto_secretbox_NONCEBYTES];
+  unsigned char *ciphertext;
+  size_t ciphertext_len;
+} ENCRYPT;
+
+int EncryptEntry(const char *entry, const char *passphrase, ENCRYPT *out) {
+  size_t entry_len = sizeof(entry);
+
+  unsigned char key[crypto_secretbox_KEYBYTES];
+
+  randombytes_buf(out->salt, sizeof(out->salt));
+
+  randombytes_buf(out->nonce, sizeof(out->nonce));
+
+  if (crypto_pwhash(key, sizeof(key), passphrase, strlen(passphrase), out->salt,
+                    crypto_pwhash_OPSLIMIT_INTERACTIVE,
+                    crypto_pwhash_MEMLIMIT_INTERACTIVE,
+                    crypto_pwhash_ALG_DEFAULT) != 0) {
+    sodium_memzero(key, sizeof(key));
+    return -1;
+  }
+
+  out->ciphertext_len = entry_len + crypto_secretbox_MACBYTES;
+
+  out->ciphertext = malloc(out->ciphertext_len);
+
+  if (out->ciphertext == NULL) {
+    sodium_memzero(key, sizeof(key));
+    return -1;
+  }
+
+  crypto_secretbox_easy(out->ciphertext, (const unsigned char *)entry,
+                        entry_len, out->nonce, key);
+
+  sodium_memzero(key, sizeof(key));
+
+  return 0;
 }
 
 typedef struct {
@@ -107,8 +149,8 @@ static void ButtonClickedSetNewEntryName(GtkWidget *widget, gpointer data) {
   } else {
     save->file = fopen(save->filename, "w+");
     gtk_widget_destroy(save->window_popup);
+    PassphrasePopUp(save, "Set passphrase", save->window);
   }
-  PassphrasePopUp(save, "Set passphrase", save->window);
 }
 
 static gboolean PopupClose(GtkWidget *widget, GdkEvent *event, gpointer data) {
@@ -160,6 +202,7 @@ static void SetNewEntryName(GtkStyleContext *style, GtkWidget *window,
 
 static void SaveButton(GtkWidget *widget, gpointer data) {
   SAVE *save = data;
+  ENCRYPT *encrypt = malloc(sizeof(ENCRYPT));
 
   GtkTextBuffer *buffer;
   GtkTextIter start, end;
@@ -170,11 +213,12 @@ static void SaveButton(GtkWidget *widget, gpointer data) {
   gtk_text_buffer_get_end_iter(buffer, &end);
 
   text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+  EncryptEntry(text, save->passphrase, encrypt);
 
   fseek(save->file, 0, SEEK_SET);
   ftruncate(fileno(save->file), 0);
 
-  fprintf(save->file, "%s", text);
+  fprintf(save->file, "%s", encrypt->ciphertext);
   fflush(save->file);
 }
 
