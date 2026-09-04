@@ -34,7 +34,7 @@ typedef struct {
 } ENCRYPT;
 
 int EncryptEntry(const char *entry, const char *passphrase, ENCRYPT *out) {
-  size_t entry_len = sizeof(entry);
+  size_t entry_len = strlen(entry);
 
   unsigned char key[crypto_secretbox_KEYBYTES];
 
@@ -67,6 +67,42 @@ int EncryptEntry(const char *entry, const char *passphrase, ENCRYPT *out) {
   return 0;
 }
 
+int DecryptEntry(const ENCRYPT *in, const char *passphrase, char **entry_out) {
+  unsigned char key[crypto_secretbox_KEYBYTES];
+
+  if (crypto_pwhash(key, sizeof(key), passphrase, strlen(passphrase), in->salt,
+                    crypto_pwhash_OPSLIMIT_INTERACTIVE,
+                    crypto_pwhash_MEMLIMIT_INTERACTIVE,
+                    crypto_pwhash_ALG_DEFAULT) != 0) {
+    sodium_memzero(key, sizeof(key));
+    return -1;
+  }
+
+  size_t plaintext_len = in->ciphertext_len - crypto_secretbox_MACBYTES;
+
+  char *plaintext = malloc(plaintext_len + 1);
+
+  if (plaintext == NULL) {
+    sodium_memzero(key, sizeof(key));
+    return -1;
+  }
+
+  if (crypto_secretbox_open_easy((unsigned char *)plaintext, in->ciphertext,
+                                 in->ciphertext_len, in->nonce, key) != 0) {
+    free(plaintext);
+    sodium_memzero(key, sizeof(key));
+    return -1;
+  }
+
+  plaintext[plaintext_len] = '\0';
+
+  *entry_out = plaintext;
+
+  sodium_memzero(key, sizeof(key));
+
+  return 0;
+}
+
 typedef struct {
   GtkWidget *entry, *window_popup, *textview, *statusbar, *window,
       *phrase_entry;
@@ -92,24 +128,44 @@ static void MainMenuButton(GtkWidget *widget, gpointer data) {
 }
 
 static void DisplayFileContents(SAVE *save, const gchar *filename) {
-  GtkTextBuffer *buffer;
-  char file_content[100];
-  save->file = fopen(filename, "r+");
-  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->textview));
+  ENCRYPT *encrypt = malloc(sizeof(ENCRYPT));
 
-  gtk_text_buffer_set_text(buffer, "", -1); // clears the buffer
-  while (fgets(file_content, 100, save->file)) {
-    gtk_text_buffer_insert_at_cursor(buffer, file_content, -1);
-  }
+  GtkTextBuffer *buffer =
+      gtk_text_view_get_buffer(GTK_TEXT_VIEW(save->textview));
+
+  gtk_text_buffer_set_text(buffer, "", -1);
+
+  save->file = fopen(filename, "rb");
+
+  fread(encrypt->salt, sizeof(encrypt->salt), 1, save->file);
+
+  fread(encrypt->nonce, sizeof(encrypt->nonce), 1, save->file);
+
+  fread(&encrypt->ciphertext_len, sizeof(encrypt->ciphertext_len), 1,
+        save->file);
+
+  encrypt->ciphertext = malloc(encrypt->ciphertext_len);
+
+  fread(encrypt->ciphertext, encrypt->ciphertext_len, 1, save->file);
+
+  char *decrypted = NULL;
+
+  DecryptEntry(encrypt, save->passphrase, &decrypted);
+  gtk_text_buffer_set_text(buffer, decrypted, -1);
 }
 
 static void GetPassphrase(GtkWidget *widget, gpointer data) {
   SAVE *save = data;
-  save->passphrase = gtk_entry_get_text(GTK_ENTRY(save->phrase_entry));
-  if (strcmp(save->passphrase, "") != 0) {
-    g_print(save->passphrase);
-    gtk_widget_destroy(save->window_popup);
-  }
+
+  const gchar *pass = gtk_entry_get_text(GTK_ENTRY(save->phrase_entry));
+
+  if (strcmp(pass, "") == 0)
+    return;
+
+  save->passphrase = g_strdup(pass);
+
+  gtk_widget_destroy(save->window_popup);
+
   DisplayFileContents(save, save->filename);
 }
 
@@ -215,10 +271,23 @@ static void SaveButton(GtkWidget *widget, gpointer data) {
   text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
   EncryptEntry(text, save->passphrase, encrypt);
 
-  fseek(save->file, 0, SEEK_SET);
-  ftruncate(fileno(save->file), 0);
+  if (EncryptEntry(text, save->passphrase, encrypt) != 0) {
+    return;
+  }
 
-  fprintf(save->file, "%s", encrypt->ciphertext);
+  fclose(save->file);
+
+  save->file = fopen(save->filename, "wb");
+
+  fwrite(encrypt->salt, sizeof(encrypt->salt), 1, save->file);
+
+  fwrite(encrypt->nonce, sizeof(encrypt->nonce), 1, save->file);
+
+  fwrite(&encrypt->ciphertext_len, sizeof(encrypt->ciphertext_len), 1,
+         save->file);
+
+  fwrite(encrypt->ciphertext, encrypt->ciphertext_len, 1, save->file);
+
   fflush(save->file);
 }
 
@@ -272,7 +341,6 @@ GtkWidget *WriteSpace(gchar *filename, GtkStyleContext *style,
   gtk_box_pack_start(GTK_BOX(box), header_bar, FALSE, TRUE, 10);
 
   gtk_widget_show_all(box);
-  // fclose(save->file);
   return box;
 }
 
